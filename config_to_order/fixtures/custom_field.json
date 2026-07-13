@@ -81,6 +81,82 @@
   "read_only": 1
  },
  {
+  "depends_on": "eval: doc.configuration_doctype",
+  "doctype": "Custom Field",
+  "dt": "Quotation Item",
+  "fieldname": "configuration_section",
+  "fieldtype": "Section Break",
+  "insert_after": "item_name",
+  "label": "Configuration",
+  "name": "Quotation Item-configuration_section"
+ },
+ {
+  "depends_on": "",
+  "doctype": "Custom Field",
+  "dt": "Quotation Item",
+  "fetch_from": "item_code.configuration_doctype",
+  "fieldname": "configuration_doctype",
+  "fieldtype": "Link",
+  "hidden": 1,
+  "insert_after": "configuration_section",
+  "label": "Configuration Doctype",
+  "name": "Quotation Item-configuration_doctype",
+  "options": "DocType",
+  "read_only": 1
+ },
+ {
+  "depends_on": "eval: doc.configuration_doctype",
+  "doctype": "Custom Field",
+  "dt": "Quotation Item",
+  "fieldname": "configuration_docname",
+  "fieldtype": "Dynamic Link",
+  "insert_after": "configuration_doctype",
+  "label": "Configuration DocName",
+  "name": "Quotation Item-configuration_docname",
+  "options": "configuration_doctype",
+  "read_only": 1
+ },
+ {
+  "depends_on": "configuration_doctype",
+  "doctype": "Custom Field",
+  "dt": "Quotation Item",
+  "fieldname": "config",
+  "fieldtype": "Button",
+  "insert_after": "configuration_docname",
+  "label": "Config",
+  "name": "Quotation Item-config"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "Quotation Item",
+  "fieldname": "configuration_column",
+  "fieldtype": "Column Break",
+  "insert_after": "config",
+  "name": "Quotation Item-configuration_column"
+ },
+ {
+  "depends_on": "configuration_docname",
+  "doctype": "Custom Field",
+  "dt": "Quotation Item",
+  "fieldname": "configuration_result",
+  "fieldtype": "Link",
+  "insert_after": "configuration_column",
+  "label": "Configuration Result",
+  "name": "Quotation Item-configuration_result",
+  "options": "Configuration Result",
+  "read_only": 1
+ },
+ {
+  "depends_on": "configuration_docname",
+  "doctype": "Custom Field",
+  "dt": "Quotation Item",
+  "fieldname": "config_result",
+  "fieldtype": "Button",
+  "insert_after": "configuration_result",
+  "label": "Config Result",
+  "name": "Quotation Item-config_result"
+ },
+ {
   "collapsible": 1,
   "depends_on": "eval:parent.configuration_doctype",
   "doctype": "Custom Field",
@@ -216,6 +292,26 @@
   "label": "Selection Condition",
   "modified": "2020-02-21 23:40:00.462332",
   "name": "BOM Item-selection_condition"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "BOM Item",
+  "fieldname": "price_formula",
+  "fieldtype": "Data",
+  "insert_after": "sub_configuration_docname_field",
+  "label": "Price Formula",
+  "description": "Python expression evaluated instead of the item's list price, e.g: doc.length * doc.width * 10. `doc` is the configuration document, `qty` is this row's resolved quantity.",
+  "name": "BOM Item-price_formula"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "BOM Explosion Item",
+  "fieldname": "price_formula",
+  "fieldtype": "Data",
+  "insert_after": "sub_configuration_docname_field",
+  "label": "Price Formula",
+  "description": "Python expression evaluated instead of the item's list price, e.g: doc.length * doc.width * 10. `doc` is the configuration document, `qty` is this row's resolved quantity.",
+  "name": "BOM Explosion Item-price_formula"
  },
  {
   "doctype": "Custom Field",

@@ -2,6 +2,7 @@ import scripts, {
   item,
   bom,
   sales_order_item,
+  quotation_item,
   configuration_result,
   configuration_result_item,
   configuration_constraint
@@ -10,6 +11,7 @@ import scripts, {
 frappe.ui.form.on('Item', item);
 frappe.ui.form.on('BOM', bom);
 frappe.ui.form.on('Sales Order Item', sales_order_item);
+frappe.ui.form.on('Quotation Item', quotation_item);
 frappe.ui.form.on('Configuration Result', configuration_result);
 frappe.ui.form.on('Configuration Result Item', configuration_result_item);
 frappe.ui.form.on('Configuration Constraint', configuration_constraint);

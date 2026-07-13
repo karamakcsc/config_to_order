@@ -47,6 +47,16 @@ def _resolve_configuration_result(bom_no, fetch_exploded, configuration_doctype,
         config_item.update({'rate': item_detail.get('rate') or config_item.get('price_list_rate') or 0})
         config_item.update({'amount': config_item.get('rate') * config_item.get('qty')})
 
+    def apply_price_formula(item, config_item):
+        '''If `item` declares a price_formula, evaluate it (doc=configuration, qty=resolved qty)
+        and use the result as this row's per-unit rate instead of the plain item price.'''
+        price_formula = item.get('price_formula')
+        if not price_formula:
+            return
+
+        rate = flt(frappe.safe_eval(price_formula, None, {'doc': configuration, 'qty': config_item.get('qty')}))
+        config_item.update({'rate': rate, 'amount': rate * config_item.get('qty')})
+
     def resolve_sub_configuration(item, config_item):
         '''If `item` is itself a configurable sub-assembly, recursively resolve its own Super BOM
         and roll its total up into config_item's rate/amount instead of a plain item price lookup.'''
@@ -98,6 +108,7 @@ def _resolve_configuration_result(bom_no, fetch_exploded, configuration_doctype,
                 'qty': get_qty_or_desc(configuration, item, 'qty', 'qty_from_configuration')
             }
             update_item_detail(item.item_code, config_item)
+            apply_price_formula(item, config_item)
             resolve_sub_configuration(item, config_item)
             configuration_result.append('config_items', config_item )
 
@@ -138,9 +149,32 @@ def get_configuration_docname(doctype=None, txt=None, searchfield=None, start=No
 	"""get relevant fields of the configuration doctype"""
 
 	filters = filters or {}
-	return frappe.db.sql("""select soi.configuration_docname, so.name, so.customer from `tabSales Order Item` soi
-		inner join `tabSales Order` so on soi.parent=so.name where
-		soi.configuration_doctype = %(configuration_doctype)s  and soi.configuration_docname is not null
-		and (soi.configuration_docname like %(txt)s or so.name like %(txt)s)""",
-		{'configuration_doctype':filters.get('configuration_doctype'),
-		 'txt': "%%%s%%" % txt})
+	source_doctype = filters.get('source_doctype') or 'Sales Order Item'
+
+	if source_doctype == 'Sales Order Item':
+		# kept as its own literal query so this, the original/default path, is untouched
+		return frappe.db.sql("""select soi.configuration_docname, so.name, so.customer from `tabSales Order Item` soi
+			inner join `tabSales Order` so on soi.parent=so.name where
+			soi.configuration_doctype = %(configuration_doctype)s  and soi.configuration_docname is not null
+			and (soi.configuration_docname like %(txt)s or so.name like %(txt)s)""",
+			{'configuration_doctype':filters.get('configuration_doctype'),
+			 'txt': "%%%s%%" % txt})
+
+	# generic path for any other source doctype (e.g. Quotation Item): find its parent via the
+	# Table docfield that links them, rather than hardcoding a doctype->parent map
+	parent_doctype = frappe.db.get_value('DocField', {'fieldtype': 'Table', 'options': source_doctype}, 'parent')
+	if not parent_doctype:
+		frappe.throw(_("Could not determine the parent doctype for {0}").format(source_doctype))
+
+	# both are confirmed real, installed doctypes at this point (get_meta throws otherwise) -
+	# safe to interpolate into the query below as table names
+	frappe.get_meta(source_doctype)
+	frappe.get_meta(parent_doctype)
+
+	return frappe.db.sql("""select child.configuration_docname, parent.name, '' as customer
+		from `tab{source_doctype}` child
+		inner join `tab{parent_doctype}` parent on child.parent = parent.name
+		where child.configuration_doctype = %(configuration_doctype)s and child.configuration_docname is not null
+		and (child.configuration_docname like %(txt)s or parent.name like %(txt)s)""".format(
+			source_doctype=source_doctype, parent_doctype=parent_doctype),
+		{'configuration_doctype': filters.get('configuration_doctype'), 'txt': "%%%s%%" % txt})

@@ -1,3 +1,3 @@
 import { make_configuration_item_scripts } from './configuration_item';
 
-export default make_configuration_item_scripts('Sales Order Item');
+export default make_configuration_item_scripts('Quotation Item');
