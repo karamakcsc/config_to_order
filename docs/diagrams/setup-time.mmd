@@ -1,0 +1,23 @@
+%%{init: {'theme': 'neutral'}}%%
+flowchart LR
+    Item["Item<br/>is_configurable = 1<br/>configuration_doctype"]
+    BOM["BOM / Super BOM<br/>header item = the configurable Item<br/>(configuration_doctype mirrors the item's, via fetch_from)"]
+    Row["BOM Item / BOM Explosion Item row<br/>(one per possible component)"]
+    CT["Configuration Template<br/>(any custom DocType you create)"]
+    SubCT["Sub-assembly's own Configuration Template<br/>(a second custom DocType, optional)"]
+    CC["Configuration Constraint<br/>Requires / Excludes / Range / Expression"]
+
+    BOM -- "item =" --> Item
+    Item -- "configuration_doctype<br/>(fetch_from item.configuration_doctype)" --> CT
+    BOM --> Row
+
+    Row -- "row fields each name a field on the template:<br/>item/qty/desc_from_configuration,<br/>selection_condition, price_formula,<br/>sub_configuration_docname_field" --> CT
+    Row -- "sub_configuration_doctype:<br/>this row is itself configurable, against" --> SubCT
+
+    CC -- "configuration_doctype:<br/>validated on every save of a" --> CT
+    CC -. "could equally target" .-> SubCT
+
+    classDef template fill:#e8f4fd,stroke:#4a90d9,color:#1a1a1a;
+    classDef rule fill:#fdf0e8,stroke:#d98c4a,color:#1a1a1a;
+    class CT,SubCT template;
+    class CC rule;

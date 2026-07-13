@@ -1,0 +1,33 @@
+%%{init: {'theme': 'neutral'}}%%
+flowchart TD
+    SOI["Sales Order Item<br/>(or Quotation Item)"]
+    ConfigDoc["Configuration Template document<br/>(the filled-in config,<br/>e.g. a 'Machine Configuration' record)"]
+    Constraint{{"Configuration Constraint rows<br/>for this doctype"}}
+    ConfigResult["Configuration Result<br/>(config_items + total +<br/>configuration_snapshot)"]
+    NestedResult["Nested Configuration Result<br/>(sub-assembly's own config_items + total)"]
+    WO["Work Order"]
+    SE["Stock Entry (Manufacture)"]
+    SABB["Serial and Batch Bundle"]
+    SerialNo["Serial No<br/>configuration_result"]
+
+    SOI -- "1. click Config button<br/>[user action] -> new or re-config" --> ConfigDoc
+    ConfigDoc -- "on save: doc_events['*']['validate']<br/>[automatic hook] checks" --> Constraint
+    Constraint -- "violated -> frappe.throw<br/>satisfied -> save proceeds" --> ConfigDoc
+
+    SOI -- "2. click Config Result button<br/>[user action] -> get_configuration_result(bom_no, ..., configuration_docname)" --> ConfigResult
+    ConfigDoc -. "read during resolution<br/>[automatic, inside the call]" .-> ConfigResult
+
+    ConfigResult -- "row has sub_configuration_doctype set<br/>[automatic, same call, recursive]" --> NestedResult
+    NestedResult -- "parent_configuration_result /<br/>nested_configuration_result<br/>[automatic] link the two" --> ConfigResult
+
+    ConfigResult -- "3. total copied to rate,<br/>Configuration Result saved<br/>[user clicks Save]<br/>-> Sales Order Item.configuration_result" --> SOI
+
+    SOI -- "4. Sales Order submitted, then<br/>'Make Work Order'<br/>[user action] -> sets Work Order.sales_order_item" --> WO
+    WO -- "5. 'Create Stock Entry' (Manufacture)<br/>[user action]" --> SE
+    SE -- "6. has_serial_no item +<br/>make_serial_no_batch_from_work_order setting<br/>[automatic, ERPNext core]" --> SABB
+    SABB -- "7. doc_events['Serial and Batch Bundle']['on_submit']<br/>[automatic hook] traces<br/>voucher_no -> work_order -> sales_order_item<br/>-> configuration_result, sets it on each serial" --> SerialNo
+
+    classDef userAction fill:#e8f4fd,stroke:#4a90d9,color:#1a1a1a;
+    classDef autoHook fill:#e8fbe8,stroke:#4ab04a,color:#1a1a1a;
+    class SOI,WO,SE userAction;
+    class Constraint,SABB,SerialNo autoHook;

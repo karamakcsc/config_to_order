@@ -6,6 +6,18 @@ fields to decide which components go into an order, in what quantity, and at wha
 
 Original discussion / background: https://discuss.erpnext.com/t/new-feature-config-to-order-erpnext-version-of-saps-variant-configuration-need-community-feedback/55621
 
+### Documentation
+
+- **Setup guide** - installation, prerequisites, and a from-zero worked example:
+  [`docs/setup.md`](docs/setup.md) ([العربية](docs/setup.ar.md))
+- **User guide** - screen-by-screen walkthrough for sales/manufacturing staff, with
+  diagrams: [`docs/user-guide.md`](docs/user-guide.md) ([العربية](docs/user-guide.ar.md))
+- **Diagrams** (Mermaid source, also embedded in the user guide):
+  [`docs/diagrams/setup-time.mmd`](docs/diagrams/setup-time.mmd) (which doctypes
+  reference which, at setup time) and
+  [`docs/diagrams/runtime-flow.mmd`](docs/diagrams/runtime-flow.mmd) (the data flow
+  for a single order, start to finish)
+
 ### Install
 
 ```
