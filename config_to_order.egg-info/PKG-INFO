@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: config_to_order
+Version: 0.0.1
+Summary: Config To Order
+Author: Fisher
+Author-email: yuxinyong@163.com
+Requires-Dist: frappe
+Dynamic: author
+Dynamic: author-email
+Dynamic: requires-dist
+Dynamic: summary
