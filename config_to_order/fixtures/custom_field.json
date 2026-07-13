@@ -1,5 +1,17 @@
 [
  {
+  "description": "Set automatically for Serial Nos generated from a manufactured, configured item - links back to the Configuration Result that drove the build.",
+  "doctype": "Custom Field",
+  "dt": "Serial No",
+  "fieldname": "configuration_result",
+  "fieldtype": "Link",
+  "insert_after": "item_name",
+  "label": "Configuration Result",
+  "options": "Configuration Result",
+  "read_only": 1,
+  "name": "Serial No-configuration_result"
+ },
+ {
   "doctype": "Custom Field",
   "dt": "BOM",
   "fetch_from": "item.configuration_doctype",

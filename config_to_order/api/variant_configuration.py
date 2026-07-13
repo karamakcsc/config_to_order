@@ -98,6 +98,9 @@ def _resolve_configuration_result(bom_no, fetch_exploded, configuration_doctype,
     configuration_result.reference_doctype = configuration_doctype
     configuration_result.reference_docname = configuration_docname
     configuration_result.parent_configuration_result = parent_configuration_result
+    # snapshot the configuration's field values now, so later edits to the Configuration
+    # Template's fields (or the document itself) don't retroactively reinterpret this result
+    configuration_result.configuration_snapshot = frappe.as_json(configuration.as_dict())
     configuration_result.set_new_name()
     for item in sorted(item_dict.values(), key=lambda d: d['idx'] or 9999):
         if check_selection_condition(configuration, item):

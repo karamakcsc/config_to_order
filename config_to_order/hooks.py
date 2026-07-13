@@ -91,6 +91,7 @@ fixtures = [
 					'Quotation Item-configuration_column',
 					'Quotation Item-configuration_result',
 					'Quotation Item-config_result',
+					'Serial No-configuration_result',
 				],
 			]
 		],
@@ -150,6 +151,9 @@ doc_events = {
 	},
 	"Sales Order":{
 		"on_trash": "config_to_order.doc_events.sales_order.delete_configuration_doc"
+	},
+	"Serial and Batch Bundle": {
+		"on_submit": "config_to_order.doc_events.serial_and_batch_bundle.on_submit"
 	},
 	"*": {
 		"validate": "config_to_order.doc_events.configuration.validate"
