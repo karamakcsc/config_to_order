@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 import frappe
+from frappe import _
 from frappe.utils import flt, cint
 
 
@@ -105,3 +106,97 @@ def get_bom_items_as_dict(bom, company, qty=1, fetch_exploded=1, fetch_scrap_ite
 					item_dict[item][d[1]] = frappe.get_cached_value('Company',  company,  d[2]) if d[2] else None
 
 	return item_dict
+
+
+CONSTRAINT_FIELDS = [
+	'name', 'constraint_type', 'message',
+	'if_field', 'if_operator', 'if_value',
+	'then_field', 'then_operator', 'then_value',
+	'range_field', 'min_value', 'max_value',
+	'expression',
+]
+
+
+def get_active_constraints(configuration_doctype):
+	"""Active Configuration Constraint rows registered against configuration_doctype."""
+	return frappe.get_all(
+		'Configuration Constraint',
+		filters={'configuration_doctype': configuration_doctype, 'is_active': 1},
+		fields=CONSTRAINT_FIELDS,
+	)
+
+
+def _matches(configuration, field, operator, value):
+	"""Whether configuration.get(field) satisfies `operator value` (e.g. '>=' '5')."""
+	if not field:
+		return True
+
+	actual = configuration.get(field)
+
+	if operator in ('>', '>=', '<', '<='):
+		if actual is None or actual == '':
+			return False
+		try:
+			actual_num, target_num = float(actual), float(value)
+		except (TypeError, ValueError):
+			return False
+		if operator == '>':
+			return actual_num > target_num
+		if operator == '>=':
+			return actual_num >= target_num
+		if operator == '<':
+			return actual_num < target_num
+		return actual_num <= target_num
+
+	actual_str = '' if actual is None else str(actual)
+	if operator == 'in':
+		return actual_str in [v.strip() for v in (value or '').split(',')]
+	if operator == 'not in':
+		return actual_str not in [v.strip() for v in (value or '').split(',')]
+
+	target_str = '' if value is None else str(value)
+	if operator == '!=':
+		return actual_str != target_str
+	return actual_str == target_str
+
+
+def evaluate_constraint(configuration, constraint):
+	"""Return True if `configuration` satisfies `constraint` (a Configuration Constraint row), False if violated."""
+	constraint_type = constraint.get('constraint_type')
+
+	if constraint_type in ('Requires', 'Excludes'):
+		if not _matches(configuration, constraint.get('if_field'), constraint.get('if_operator'), constraint.get('if_value')):
+			return True
+		then_matches = _matches(configuration, constraint.get('then_field'), constraint.get('then_operator'), constraint.get('then_value'))
+		return then_matches if constraint_type == 'Requires' else not then_matches
+
+	if constraint_type == 'Range':
+		value = configuration.get(constraint.get('range_field'))
+		if value is None or value == '':
+			return True
+		try:
+			value_num = float(value)
+		except (TypeError, ValueError):
+			return True
+		min_value, max_value = constraint.get('min_value'), constraint.get('max_value')
+		if min_value is not None and value_num < float(min_value):
+			return False
+		if max_value is not None and value_num > float(max_value):
+			return False
+		return True
+
+	if constraint_type == 'Expression':
+		return bool(frappe.safe_eval(constraint.get('expression'), None, {'doc': configuration}))
+
+	return True
+
+
+def validate_configuration_constraints(configuration):
+	"""frappe.throw on the first active Configuration Constraint violated by `configuration`."""
+	for constraint in get_active_constraints(configuration.doctype):
+		if not evaluate_constraint(configuration, constraint):
+			frappe.throw(
+				constraint.get('message') or _("Configuration violates constraint {0} ({1})").format(
+					constraint.get('name'), constraint.get('constraint_type')),
+				title=_("Invalid Configuration"),
+			)

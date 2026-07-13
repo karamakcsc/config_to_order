@@ -46,6 +46,7 @@ fixtures = [
                 [
                     'Configuration Result',
                     'Configuration Result Item',
+                    'Configuration Constraint',
                     'computer',
                 ],
             ]
@@ -136,6 +137,9 @@ doc_events = {
 	},
 	"Sales Order":{
 		"on_trash": "config_to_order.doc_events.sales_order.delete_configuration_doc"
+	},
+	"*": {
+		"validate": "config_to_order.doc_events.configuration.validate"
 	}
 }
 

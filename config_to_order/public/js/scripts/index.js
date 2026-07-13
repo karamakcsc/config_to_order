@@ -5,7 +5,8 @@ export {
   configuration_result_item,
   default as configuration_result,
 } from './configuration_result';
+export { default as configuration_constraint } from './configuration_constraint';
 
 export default {
-  
+
 };

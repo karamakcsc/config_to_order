@@ -3,7 +3,8 @@ import scripts, {
   bom,
   sales_order_item,
   configuration_result,
-  configuration_result_item
+  configuration_result_item,
+  configuration_constraint
 } from './scripts';
 
 frappe.ui.form.on('Item', item);
@@ -11,10 +12,11 @@ frappe.ui.form.on('BOM', bom);
 frappe.ui.form.on('Sales Order Item', sales_order_item);
 frappe.ui.form.on('Configuration Result', configuration_result);
 frappe.ui.form.on('Configuration Result Item', configuration_result_item);
+frappe.ui.form.on('Configuration Constraint', configuration_constraint);
 
 frappe.ui.form.make_control = function (opts) {
 	const fields = ['desc_from_configuration','item_from_configuration','qty_from_configuration','desc_from_configuration'];
-	if (opts.df.fieldtype =='Data' && in_list(fields,opts.df.fieldname)){
+	if (opts.df.fieldtype == 'Data' && (in_list(fields, opts.df.fieldname) || opts.df.options === 'custom query')){
 		opts.df.options='DocType';
 		opts.df.fieldtype='Link';
 		opts.df.ignore_link_validation= true;

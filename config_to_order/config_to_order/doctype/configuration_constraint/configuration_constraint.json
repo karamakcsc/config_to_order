@@ -1,0 +1,212 @@
+ {
+  "autoname": "hash",
+  "doctype": "DocType",
+  "document_type": "",
+  "engine": "InnoDB",
+  "fields": [
+   {
+    "fieldname": "configuration_doctype",
+    "fieldtype": "Link",
+    "in_list_view": 1,
+    "in_standard_filter": 1,
+    "label": "Configuration Doctype",
+    "options": "DocType",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType",
+    "reqd": 1,
+    "search_index": 1
+   },
+   {
+    "fieldname": "constraint_type",
+    "fieldtype": "Select",
+    "default": "Requires",
+    "in_list_view": 1,
+    "label": "Constraint Type",
+    "options": "Requires\nExcludes\nRange\nExpression",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType",
+    "reqd": 1
+   },
+   {
+    "fieldname": "is_active",
+    "fieldtype": "Check",
+    "default": "1",
+    "in_list_view": 1,
+    "label": "Is Active",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "fieldname": "column_break_3",
+    "fieldtype": "Column Break",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "description": "Shown to the user when this constraint is violated. Falls back to a generic message if left blank.",
+    "fieldname": "message",
+    "fieldtype": "Small Text",
+    "label": "Message",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "depends_on": "eval:in_list(['Requires', 'Excludes'], doc.constraint_type)",
+    "fieldname": "structured_section",
+    "fieldtype": "Section Break",
+    "label": "Condition",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "fieldname": "if_field",
+    "fieldtype": "Data",
+    "label": "If Field",
+    "options": "custom query",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "fieldname": "if_operator",
+    "fieldtype": "Select",
+    "label": "If Operator",
+    "options": "=\n!=\n>\n>=\n<\n<=\nin\nnot in",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "fieldname": "if_value",
+    "fieldtype": "Data",
+    "label": "If Value",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "fieldname": "column_break_9",
+    "fieldtype": "Column Break",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "fieldname": "then_field",
+    "fieldtype": "Data",
+    "label": "Then Field",
+    "options": "custom query",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "fieldname": "then_operator",
+    "fieldtype": "Select",
+    "label": "Then Operator",
+    "options": "=\n!=\n>\n>=\n<\n<=\nin\nnot in",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "fieldname": "then_value",
+    "fieldtype": "Data",
+    "label": "Then Value",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "depends_on": "eval:doc.constraint_type=='Range'",
+    "fieldname": "range_section",
+    "fieldtype": "Section Break",
+    "label": "Range",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "fieldname": "range_field",
+    "fieldtype": "Data",
+    "label": "Range Field",
+    "options": "custom query",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "fieldname": "column_break_16",
+    "fieldtype": "Column Break",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "fieldname": "min_value",
+    "fieldtype": "Float",
+    "label": "Min Value",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "fieldname": "max_value",
+    "fieldtype": "Float",
+    "label": "Max Value",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "depends_on": "eval:doc.constraint_type=='Expression'",
+    "fieldname": "expression_section",
+    "fieldtype": "Section Break",
+    "label": "Expression",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   },
+   {
+    "description": "Python expression, current config doc available as `doc`, e.g: doc.motor_type == '5HP'",
+    "fieldname": "expression",
+    "fieldtype": "Code",
+    "label": "Expression",
+    "options": "Python",
+    "parent": "Configuration Constraint",
+    "parentfield": "fields",
+    "parenttype": "DocType"
+   }
+  ],
+  "in_create": 1,
+  "links": [],
+  "module": "Config To Order",
+  "name": "Configuration Constraint",
+  "name_case": "",
+  "permissions": [
+   {
+    "create": 1,
+    "delete": 1,
+    "email": 1,
+    "export": 1,
+    "parent": "Configuration Constraint",
+    "parentfield": "permissions",
+    "parenttype": "DocType",
+    "print": 1,
+    "read": 1,
+    "report": 1,
+    "role": "System Manager",
+    "share": 1,
+    "write": 1
+   }
+  ],
+  "sort_field": "modified",
+  "sort_order": "DESC",
+  "track_changes": 1
+ }
