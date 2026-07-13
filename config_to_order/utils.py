@@ -71,7 +71,7 @@ def get_bom_items_as_dict(bom, company, qty=1, fetch_exploded=1, fetch_scrap_ite
 			select_columns = """, bom_item.source_warehouse, bom_item.operation, bom_item.include_item_in_manufacturing,
 				(Select idx from `tabBOM Item` where item_code = bom_item.item_code and parent = %(parent)s limit 1) as idx,
 				  bom_item.selection_condition, bom_item.item_from_configuration, bom_item.qty_from_configuration,
-				  bom_item.desc_from_configuration""",
+				  bom_item.desc_from_configuration, bom_item.sub_configuration_doctype, bom_item.sub_configuration_docname_field""",
 			groupby_columns = """, bom_item.operation""")
 
 		items = frappe.db.sql(query, { "parent": bom, "qty": qty, "bom": bom, "company": company }, as_dict=True)
@@ -84,7 +84,7 @@ def get_bom_items_as_dict(bom, company, qty=1, fetch_exploded=1, fetch_scrap_ite
 			select_columns = """, bom_item.uom, bom_item.conversion_factor, bom_item.source_warehouse, bom_item.idx,
 							bom_item.operation, bom_item.include_item_in_manufacturing,
 							bom_item.selection_condition, bom_item.item_from_configuration, bom_item.qty_from_configuration,
-			  			bom_item.desc_from_configuration""",
+			  			bom_item.desc_from_configuration, bom_item.sub_configuration_doctype, bom_item.sub_configuration_docname_field""",
 			groupby_columns = """, bom_item.operation""")
 		items = frappe.db.sql(query, { "qty": qty, "bom": bom, "company": company }, as_dict=True)
 

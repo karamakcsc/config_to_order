@@ -11,6 +11,8 @@ from erpnext.stock.get_item_details import get_item_details
 
 from config_to_order.utils import check_selection_condition, get_qty_or_desc, get_bom_items_as_dict
 
+MAX_SUB_CONFIGURATION_DEPTH = 10
+
 @frappe.whitelist()
 def get_configuration_result(bom_no, fetch_exploded, configuration_doctype, configuration_docname, args = {}):
     '''set required_items for production to keep track of reserved qty
@@ -26,6 +28,16 @@ def get_configuration_result(bom_no, fetch_exploded, configuration_doctype, conf
             "ignore_pricing_rule": args.get('ignore_pricing_rule'),
             "project": args.get('project')
     '''
+    args = frappe._dict(json.loads(args) if isinstance(args, str) else args)
+    return _resolve_configuration_result(bom_no, fetch_exploded, configuration_doctype, configuration_docname, args)
+
+
+def _resolve_configuration_result(bom_no, fetch_exploded, configuration_doctype, configuration_docname, args,
+	parent_configuration_result=None, _depth=0):
+    '''Recursive worker behind get_configuration_result. Not whitelisted - args is always a dict here.'''
+    if _depth > MAX_SUB_CONFIGURATION_DEPTH:
+        frappe.throw(_("Sub-assembly configuration nested too deep (possible cycle) at {0} levels").format(_depth))
+
     def update_item_detail(item_code, config_item):
         args.update({"item_code": item_code})
         item_detail = get_item_details(args)
@@ -35,13 +47,47 @@ def get_configuration_result(bom_no, fetch_exploded, configuration_doctype, conf
         config_item.update({'rate': item_detail.get('rate') or config_item.get('price_list_rate') or 0})
         config_item.update({'amount': config_item.get('rate') * config_item.get('qty')})
 
-    args = frappe._dict(json.loads(args) if isinstance(args, str) else args)
+    def resolve_sub_configuration(item, config_item):
+        '''If `item` is itself a configurable sub-assembly, recursively resolve its own Super BOM
+        and roll its total up into config_item's rate/amount instead of a plain item price lookup.'''
+        sub_configuration_doctype = item.get('sub_configuration_doctype')
+        sub_docname_field = item.get('sub_configuration_docname_field')
+        if not (sub_configuration_doctype and sub_docname_field):
+            return
+
+        sub_configuration_docname = configuration.get(sub_docname_field)
+        if not sub_configuration_docname:
+            return
+
+        sub_bom_no = frappe.db.get_value(
+            'BOM', {'item': item.item_code, 'is_default': 1, 'docstatus': 1}, 'name')
+        if not sub_bom_no:
+            return
+
+        nested_result = _resolve_configuration_result(
+            sub_bom_no, fetch_exploded, sub_configuration_doctype, sub_configuration_docname, args,
+            parent_configuration_result=configuration_result.name, _depth=_depth + 1)
+
+        if frappe.db.exists('Configuration Result', nested_result.name):
+            frappe.delete_doc('Configuration Result', nested_result.name, force=1, ignore_permissions=True)
+        # parent_configuration_result points at the top-level result, which by design stays
+        # unsaved server-side (the client persists it later) - skip link validation for that.
+        nested_result.flags.ignore_links = True
+        nested_result.insert(ignore_permissions=True)
+
+        config_item.update({
+            'nested_configuration_result': nested_result.name,
+            'rate': nested_result.total,
+            'amount': nested_result.total * config_item.get('qty'),
+        })
+
     item_dict = get_bom_items_as_dict(bom_no, args.get('company'), qty = 1, fetch_exploded = fetch_exploded)
 
     configuration = frappe.get_doc(configuration_doctype, configuration_docname)
     configuration_result = frappe.new_doc('Configuration Result')
     configuration_result.reference_doctype = configuration_doctype
     configuration_result.reference_docname = configuration_docname
+    configuration_result.parent_configuration_result = parent_configuration_result
     configuration_result.set_new_name()
     for item in sorted(item_dict.values(), key=lambda d: d['idx'] or 9999):
         if check_selection_condition(configuration, item):
@@ -52,7 +98,10 @@ def get_configuration_result(bom_no, fetch_exploded, configuration_doctype, conf
                 'qty': get_qty_or_desc(configuration, item, 'qty', 'qty_from_configuration')
             }
             update_item_detail(item.item_code, config_item)
+            resolve_sub_configuration(item, config_item)
             configuration_result.append('config_items', config_item )
+
+    configuration_result.total = sum(flt(d.amount) for d in configuration_result.config_items)
     return configuration_result
 
 @frappe.whitelist()
@@ -71,6 +120,18 @@ def get_configuration_fields(doctype=None, txt=None, searchfield=None, start=Non
 		fields = [[f.fieldname, _(f.fieldname), _(f.label)] for f in meta.fields if (not field_types or f.fieldtype in field_types) and check(f)]
 
 	return fields
+
+@frappe.whitelist()
+def get_sub_configuration_requirements(bom_no):
+	"""BOM Item rows of bom_no that are themselves configurable sub-assemblies.
+
+	Used by the client to prompt for a sub-configuration document per such row
+	before calling get_configuration_result.
+	"""
+	return frappe.db.sql("""select item_code, sub_configuration_doctype, sub_configuration_docname_field
+		from `tabBOM Item`
+		where parent = %(bom_no)s and docstatus < 2 and ifnull(sub_configuration_doctype, '') != ''""",
+		{'bom_no': bom_no}, as_dict=True)
 
 @frappe.whitelist()
 def get_configuration_docname(doctype=None, txt=None, searchfield=None, start=None, page_len=None, filters=None):

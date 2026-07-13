@@ -219,6 +219,52 @@
  },
  {
   "doctype": "Custom Field",
+  "dt": "BOM Item",
+  "fieldname": "sub_configuration_doctype",
+  "fieldtype": "Link",
+  "insert_after": "selection_condition",
+  "label": "Sub Configuration Doctype",
+  "options": "DocType",
+  "description": "If set, this component is itself a configurable item resolved recursively against its own Super BOM.",
+  "name": "BOM Item-sub_configuration_doctype"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "BOM Item",
+  "fieldname": "sub_configuration_docname_field",
+  "fieldtype": "Data",
+  "insert_after": "sub_configuration_doctype",
+  "label": "Sub Configuration Docname Field",
+  "options": "custom query",
+  "depends_on": "eval:doc.sub_configuration_doctype",
+  "description": "Field on the parent configuration doctype that holds the sub-assembly's own configuration document name.",
+  "name": "BOM Item-sub_configuration_docname_field"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "BOM Explosion Item",
+  "fieldname": "sub_configuration_doctype",
+  "fieldtype": "Link",
+  "insert_after": "selection_condition",
+  "label": "Sub Configuration Doctype",
+  "options": "DocType",
+  "description": "If set, this component is itself a configurable item resolved recursively against its own Super BOM.",
+  "name": "BOM Explosion Item-sub_configuration_doctype"
+ },
+ {
+  "doctype": "Custom Field",
+  "dt": "BOM Explosion Item",
+  "fieldname": "sub_configuration_docname_field",
+  "fieldtype": "Data",
+  "insert_after": "sub_configuration_doctype",
+  "label": "Sub Configuration Docname Field",
+  "options": "custom query",
+  "depends_on": "eval:doc.sub_configuration_doctype",
+  "description": "Field on the parent configuration doctype that holds the sub-assembly's own configuration document name.",
+  "name": "BOM Explosion Item-sub_configuration_docname_field"
+ },
+ {
+  "doctype": "Custom Field",
   "dt": "Item",
   "fieldname": "is_configurable",
   "fieldtype": "Check",

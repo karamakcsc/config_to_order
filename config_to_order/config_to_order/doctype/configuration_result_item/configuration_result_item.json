@@ -164,6 +164,17 @@
     "parent": "Configuration Result Item",
     "parentfield": "fields",
     "parenttype": "DocType"
+   },
+   {
+    "description": "Set when this component is itself a configured sub-assembly - links to its own resolved Configuration Result.",
+    "fieldname": "nested_configuration_result",
+    "fieldtype": "Link",
+    "label": "Nested Configuration Result",
+    "options": "Configuration Result",
+    "parent": "Configuration Result Item",
+    "parentfield": "fields",
+    "parenttype": "DocType",
+    "read_only": 1
    }
   ],
   "istable": 1,

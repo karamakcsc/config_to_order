@@ -33,6 +33,17 @@
     "read_only": 1
    },
    {
+    "description": "Set when this Configuration Result was created as a sub-assembly of another Configuration Result.",
+    "fieldname": "parent_configuration_result",
+    "fieldtype": "Link",
+    "label": "Parent Configuration Result",
+    "options": "Configuration Result",
+    "parent": "Configuration Result",
+    "parentfield": "fields",
+    "parenttype": "DocType",
+    "read_only": 1
+   },
+   {
     "fieldname": "reference_doctype",
     "fieldtype": "Link",
     "hidden": 1,
