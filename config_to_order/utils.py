@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
+import inspect
+
 import frappe
 from frappe import _
 from frappe.utils import flt, cint
@@ -11,6 +13,27 @@ CONFIGURATION_FIELDS = [
 	'desc_from_configuration', 'sub_configuration_doctype', 'sub_configuration_docname_field',
 	'price_formula',
 ]
+
+# erpnext renamed this kwarg (fetch_scrap_items -> fetch_secondary_items) and the backing
+# doctype ("BOM Scrap Item" -> "BOM Secondary Item") between v15 and v16. Detect which one
+# the installed erpnext actually has instead of hardcoding a version.
+_SECONDARY_ITEMS_PARAM = (
+	'fetch_secondary_items'
+	if 'fetch_secondary_items' in inspect.signature(_core_get_bom_items_as_dict).parameters
+	else 'fetch_scrap_items'
+)
+_SECONDARY_ITEMS_TABLE = 'BOM Secondary Item' if _SECONDARY_ITEMS_PARAM == 'fetch_secondary_items' else 'BOM Scrap Item'
+
+
+def _lookup_by_item_and_operation(item_dict, item_code, operation):
+	"""erpnext keys exploded/bom item dicts by (item_code, operation) when it tracks
+	operations (v16+), or by plain item_code otherwise (v15) - try both so this works
+	on either version."""
+	if operation:
+		item = item_dict.get((item_code, operation))
+		if item:
+			return item
+	return item_dict.get(item_code)
 
 
 def check_selection_condition(configuration, bom_item):
@@ -38,20 +61,22 @@ def get_qty_or_desc(configuration, bom_item, bom_field, config_field):
 
 
 def get_bom_items_as_dict(bom, company, qty=1, fetch_exploded=1, fetch_secondary_items=0,
-	include_non_stock_items=False, fetch_qty_in_stock_uom=True):
+	fetch_scrap_items=0, include_non_stock_items=False, fetch_qty_in_stock_uom=True):
 	"""Delegates to erpnext's own get_bom_items_as_dict (so rate/warehouse/phantom-item/etc
 	logic always matches the installed erpnext version), then enriches each row with the
 	configuration-specific custom fields (selection_condition, item_from_configuration, ...)
 	that erpnext's own query doesn't select, keyed by (item_code[, operation])."""
+	secondary_items = fetch_secondary_items or fetch_scrap_items
 	item_dict = _core_get_bom_items_as_dict(
-		bom, company, qty=qty, fetch_exploded=fetch_exploded, fetch_secondary_items=fetch_secondary_items,
+		bom, company, qty=qty, fetch_exploded=fetch_exploded,
 		include_non_stock_items=include_non_stock_items, fetch_qty_in_stock_uom=fetch_qty_in_stock_uom,
+		**{_SECONDARY_ITEMS_PARAM: secondary_items},
 	)
 	if not item_dict:
 		return item_dict
 
-	if fetch_secondary_items:
-		table = "BOM Secondary Item"
+	if secondary_items:
+		table = _SECONDARY_ITEMS_TABLE
 	elif cint(fetch_exploded):
 		table = "BOM Explosion Item"
 	else:
@@ -64,8 +89,7 @@ def get_bom_items_as_dict(bom, company, qty=1, fetch_exploded=1, fetch_secondary
 		{'bom': bom}, as_dict=True)
 
 	for row in rows:
-		key = (row.item_code, row.operation) if row.operation else row.item_code
-		item = item_dict.get(key)
+		item = _lookup_by_item_and_operation(item_dict, row.item_code, row.operation)
 		if item:
 			for field in CONFIGURATION_FIELDS:
 				item[field] = row.get(field)

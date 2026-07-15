@@ -193,9 +193,12 @@ doc_events = {
 # 	"frappe.desk.doctype.event.event.get_events": "config_to_order.event.get_events"
 # }
 
+import inspect
+
 from erpnext.manufacturing.doctype.bom import bom as _bom
 from config_to_order.utils import (
 	check_selection_condition, get_qty_or_desc, get_bom_items_as_dict, CONFIGURATION_FIELDS,
+	_lookup_by_item_and_operation,
 )
 
 _bom.get_bom_items_as_dict = get_bom_items_as_dict
@@ -215,8 +218,7 @@ def get_exploded_items(self):
 	for d in self.get('items'):
 		if d.bom_no:
 			continue
-		key = (d.item_code, d.operation) if d.operation else d.item_code
-		entry = self.cur_exploded_items.get(key)
+		entry = _lookup_by_item_and_operation(self.cur_exploded_items, d.item_code, d.operation)
 		if entry:
 			for field in CONFIGURATION_FIELDS:
 				entry[field] = d.get(field)
@@ -225,9 +227,17 @@ BOM.get_exploded_items = get_exploded_items
 
 
 _original_get_child_exploded_items = BOM.get_child_exploded_items
+# erpnext v15's get_child_exploded_items doesn't take an `operation` arg (added in v16) -
+# detect what the installed version actually accepts instead of hardcoding a version.
+_get_child_exploded_items_supports_operation = (
+	'operation' in inspect.signature(_original_get_child_exploded_items).parameters
+)
 
 def get_child_exploded_items(self, bom_no, stock_qty, operation=None):
-	_original_get_child_exploded_items(self, bom_no, stock_qty, operation)
+	if _get_child_exploded_items_supports_operation:
+		_original_get_child_exploded_items(self, bom_no, stock_qty, operation)
+	else:
+		_original_get_child_exploded_items(self, bom_no, stock_qty)
 
 	fields = ", ".join("bom_item." + f for f in CONFIGURATION_FIELDS)
 	child_fb_items = _frappe.db.sql("""select bom_item.item_code, bom_item.operation, {fields}
@@ -236,9 +246,7 @@ def get_child_exploded_items(self, bom_no, stock_qty, operation=None):
 		bom_no, as_dict=1)
 
 	for d in child_fb_items:
-		op = d.operation or operation
-		key = (d.item_code, op) if op else d.item_code
-		entry = self.cur_exploded_items.get(key)
+		entry = _lookup_by_item_and_operation(self.cur_exploded_items, d.item_code, d.operation or operation)
 		if entry:
 			for field in CONFIGURATION_FIELDS:
 				entry[field] = d.get(field)
@@ -248,12 +256,19 @@ BOM.get_child_exploded_items = get_child_exploded_items
 from erpnext.manufacturing.doctype.work_order.work_order import WorkOrder
 
 _original_set_required_items = WorkOrder.set_required_items
+# erpnext v15's set_required_items doesn't take a `reset_source_warehouse` arg (added in v16).
+_set_required_items_supports_reset_source_warehouse = (
+	'reset_source_warehouse' in inspect.signature(_original_set_required_items).parameters
+)
 
 def set_required_items(self, reset_only_qty=False, reset_source_warehouse=False):
 	'''After erpnext builds required_items from the BOM, drop rows the active Configuration
 	Result excludes (via selection_condition/item_from_configuration) and let the
 	configuration override description/qty where it specifies its own.'''
-	_original_set_required_items(self, reset_only_qty=reset_only_qty, reset_source_warehouse=reset_source_warehouse)
+	if _set_required_items_supports_reset_source_warehouse:
+		_original_set_required_items(self, reset_only_qty=reset_only_qty, reset_source_warehouse=reset_source_warehouse)
+	else:
+		_original_set_required_items(self, reset_only_qty=reset_only_qty)
 
 	if not (self.bom_no and self.qty):
 		return
